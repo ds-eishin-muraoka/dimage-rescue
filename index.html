@@ -707,10 +707,11 @@
     { emoji: "📠", label: "FAX複合機", pts: 15, weight: 9 },
     { emoji: "🖨️", label: "帳票サーバ", pts: 15, weight: 7 },
     { emoji: "🧮", label: "COBOL資産", pts: 25, weight: 3 },
-    { emoji: "🤖", label: "AI開発支援", pts: 20, weight: 3, fever: true },
+    { emoji: "🤖", label: "AI開発支援", pts: 20, weight: 6, fever: true },
     { emoji: "💣", label: "触るな危険", pts: -50, weight: 15, bee: true },
   ];
   const TOTAL_WEIGHT = SPECIES.reduce((s, a) => s + a.weight, 0);
+  const FEVER_SPECIES = SPECIES.find((s) => s.fever);
 
   const board = document.getElementById("board");
   const scoreEl = document.getElementById("score");
@@ -757,6 +758,7 @@
   let endAt = 0;
   let nextSpawnAt = 0;
   let feverUntil = 0;
+  let feverSeen = false;
   let rafId = 0;
 
   // ---- サウンド（短いピコピコ音のみ・ミュート可） ----
@@ -804,7 +806,9 @@
     const empty = mounds.filter((m) => !m.species);
     if (!empty.length) return;
     const m = empty[Math.floor(Math.random() * empty.length)];
-    const s = pickSpecies();
+    // 折り返しを過ぎても🤖が未登場なら強制出現（毎ゲーム必ず1回は出る）
+    const s = (!feverSeen && elapsedRatio() > 0.5) ? FEVER_SPECIES : pickSpecies();
+    if (s.fever) feverSeen = true;
     m.species = s;
     m.fed = false;
     m.emojiEl.textContent = s.emoji;
@@ -914,6 +918,7 @@
     combo = 0;
     running = true;
     feverUntil = 0;
+    feverSeen = false;
     startOverlay.hidden = true;
     resultOverlay.hidden = true;
     promoOverlay.hidden = true;
