@@ -435,6 +435,25 @@
     font-variant-numeric: tabular-nums;
   }
   .panel.promo h2 { color: var(--blue-600); }
+  .panel.promo .mini-score {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--card-border);
+  }
+  .panel.promo .ms-num {
+    font-size: 30px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .panel.promo .ms-rank {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--blue-600);
+  }
   .panel.promo .eyebrow {
     font-size: 11px;
     font-weight: 800;
@@ -638,6 +657,10 @@
     <div class="overlay" id="promoOverlay" hidden>
       <div class="panel promo">
         <button class="close" id="promoClose" aria-label="とじる">✕</button>
+        <div class="mini-score">
+          <span class="ms-num" id="promoScore">0</span>
+          <span class="ms-rank" id="promoRank"></span>
+        </div>
         <div class="eyebrow">実は これ…</div>
         <h2>ディマージシェアの本業です</h2>
         <div class="animals-row">☁️🖥️⚙️</div>
@@ -789,8 +812,8 @@
     m.el.classList.remove("fed", "angry");
     m.el.classList.toggle("hazard", !!s.bee);
     m.el.classList.add("up");
-    // 後半ほど表示時間を短く（1000ms → 550ms）
-    const visible = 1000 - 450 * elapsedRatio();
+    // 後半ほど表示時間を短く（900ms → 480ms）
+    const visible = 900 - 420 * elapsedRatio();
     m.hideAt = performance.now() + visible;
   }
 
@@ -875,10 +898,10 @@
     }
     if (now >= nextSpawnAt) {
       spawn();
-      // 中盤以降はときどき2台同時に出す
-      if (elapsedRatio() > 0.35 && Math.random() < 0.4) spawn();
-      // 後半ほど出現間隔を短く（700ms → 330ms）＋ゆらぎ
-      const interval = 700 - 370 * elapsedRatio();
+      // 序盤過ぎからときどき2台同時に出す
+      if (elapsedRatio() > 0.25 && Math.random() < 0.45) spawn();
+      // 後半ほど出現間隔を短く（650ms → 300ms）＋ゆらぎ
+      const interval = 650 - 350 * elapsedRatio();
       nextSpawnAt = now + interval * (0.75 + Math.random() * 0.5);
     }
 
@@ -905,9 +928,9 @@
 
   function rankFor(s) {
     if (s < 0) return "🔥 炎上案件…";
-    if (s >= 500) return "🏆 でんせつのCTO";
-    if (s >= 350) return "🌟 ベテランSE";
-    if (s >= 180) return "🍀 いちにんまえエンジニア";
+    if (s >= 700) return "🏆 でんせつのCTO";
+    if (s >= 500) return "🌟 ベテランSE";
+    if (s >= 250) return "🍀 いちにんまえエンジニア";
     return "🌱 みならいエンジニア";
   }
 
@@ -924,6 +947,8 @@
 
     document.getElementById("finalScore").textContent = score;
     document.getElementById("rank").textContent = rankFor(score);
+    document.getElementById("promoScore").textContent = score;
+    document.getElementById("promoRank").textContent = rankFor(score);
     document.getElementById("newBest").hidden = !isBest;
     document.getElementById("resultBest").textContent =
       "ベストスコア: " + Math.max(best, score);
