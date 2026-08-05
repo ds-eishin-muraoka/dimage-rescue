@@ -807,6 +807,7 @@
     if (muted) return;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type || "sine";
@@ -822,6 +823,13 @@
     muted = !muted;
     muteBtn.textContent = muted ? "🔇" : "🔊";
   });
+  // iOS Safari対策: 最初のタッチ（ユーザー操作）でAudioContextを起こす
+  document.addEventListener("pointerdown", () => {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    } catch (e) { /* 音が出せない環境では無音で続行 */ }
+  }, { capture: true });
 
   function loadBest() {
     const v = parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
