@@ -1,0 +1,980 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a6e">
+<title>レガシー基盤レスキュー大作戦</title>
+</head>
+<body>
+<style>
+  :root {
+    --navy-900: #131c45;
+    --navy-800: #1f2a6e;
+    --blue-600: #1c62cd;
+    --blue-400: #4d8ae6;
+    --cloud: #eaf1fb;
+
+    --ground: #f4f7fc;
+    --grid-line: rgba(28, 98, 205, 0.07);
+    --card: #ffffff;
+    --card-border: #dbe4f2;
+    --text: #1c2433;
+    --text-soft: #5a6880;
+    --hud-chip: #ffffff;
+    --overlay: rgba(19, 28, 69, 0.55);
+    --rack-top: #24327c;
+    --rack-bottom: #182354;
+    --slot-hole: rgba(5, 9, 28, 0.65);
+    --panel-top: #2c3d8e;
+    --panel-bottom: #1b2760;
+    --rack-shadow: rgba(19, 28, 69, 0.35);
+    --accent-warn: #d6452c;
+    --gold-400: #ffcf5c;
+    --gold-500: #f7b733;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0f1730;
+      --grid-line: rgba(77, 138, 230, 0.08);
+      --card: #1a2447;
+      --card-border: #2b3868;
+      --text: #e8eefb;
+      --text-soft: #a8b6d8;
+      --hud-chip: #1a2447;
+      --overlay: rgba(4, 7, 20, 0.65);
+      --rack-top: #1d2a66;
+      --rack-bottom: #121a45;
+      --slot-hole: rgba(0, 0, 0, 0.6);
+      --panel-top: #263578;
+      --panel-bottom: #141f52;
+      --rack-shadow: rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f4f7fc;
+    --grid-line: rgba(28, 98, 205, 0.07);
+    --card: #ffffff;
+    --card-border: #dbe4f2;
+    --text: #1c2433;
+    --text-soft: #5a6880;
+    --hud-chip: #ffffff;
+    --overlay: rgba(19, 28, 69, 0.55);
+    --rack-top: #24327c;
+    --rack-bottom: #182354;
+    --slot-hole: rgba(5, 9, 28, 0.65);
+    --panel-top: #2c3d8e;
+    --panel-bottom: #1b2760;
+    --rack-shadow: rgba(19, 28, 69, 0.35);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0f1730;
+    --grid-line: rgba(77, 138, 230, 0.08);
+    --card: #1a2447;
+    --card-border: #2b3868;
+    --text: #e8eefb;
+    --text-soft: #a8b6d8;
+    --hud-chip: #1a2447;
+    --overlay: rgba(4, 7, 20, 0.65);
+    --rack-top: #1d2a66;
+    --rack-bottom: #121a45;
+    --slot-hole: rgba(0, 0, 0, 0.6);
+    --panel-top: #263578;
+    --panel-bottom: #141f52;
+    --rack-shadow: rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Segoe UI",
+      system-ui, sans-serif;
+    color: var(--text);
+    background-color: var(--ground);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .wrap {
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 14px 10px 96px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .logo { min-width: 0; }
+  .logo .brand {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--blue-600);
+    letter-spacing: 0.28em;
+  }
+  .logo h1 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-wrap: balance;
+  }
+  button.mute {
+    border: 2px solid var(--card-border);
+    background: var(--hud-chip);
+    color: var(--text);
+    border-radius: 999px;
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+    cursor: pointer;
+    flex: none;
+  }
+
+  .hud {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .chip {
+    background: var(--hud-chip);
+    border: 2px solid var(--card-border);
+    border-radius: 14px;
+    padding: 8px 10px;
+    text-align: center;
+    box-shadow: 0 6px 18px -10px var(--rack-shadow);
+  }
+  .chip .label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-soft);
+  }
+  .chip .value {
+    font-size: 24px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .chip .value.combo-hot { color: var(--gold-500); }
+  .chip .value.neg { color: var(--accent-warn); }
+
+  .timebar {
+    height: 14px;
+    background: var(--hud-chip);
+    border: 2px solid var(--card-border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .timebar .fill {
+    height: 100%;
+    width: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--blue-400), var(--blue-600));
+    transition: width 0.25s linear;
+  }
+  .timebar .fill.low { background: linear-gradient(90deg, #e0704f, var(--accent-warn)); }
+
+  .board.fever {
+    border-color: var(--gold-500);
+    box-shadow: 0 0 0 3px var(--gold-400), 0 14px 34px -16px var(--rack-shadow);
+  }
+  .fever-badge {
+    position: absolute;
+    top: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 6;
+    background: linear-gradient(180deg, var(--gold-400), var(--gold-500));
+    color: #fff;
+    border-radius: 999px;
+    padding: 5px 16px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    box-shadow: 0 6px 14px -6px var(--gold-500);
+    animation: pulse 0.6s ease-in-out infinite alternate;
+  }
+  .fever-badge[hidden] { display: none; }
+  @keyframes pulse {
+    from { transform: translateX(-50%) scale(1); }
+    to { transform: translateX(-50%) scale(1.08); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fever-badge { animation: none; }
+  }
+
+  .board {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    background: linear-gradient(180deg, var(--navy-800), var(--navy-900));
+    border: 2px solid var(--navy-900);
+    border-radius: 20px;
+    padding: 12px;
+    box-shadow: 0 14px 34px -16px var(--rack-shadow);
+  }
+
+  .mound {
+    position: relative;
+    aspect-ratio: 1 / 0.95;
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--rack-top), var(--rack-bottom));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -4px 10px rgba(0,0,0,0.3);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  /* 通気スリット */
+  .mound::before {
+    content: "";
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 8%;
+    height: 18%;
+    background: repeating-linear-gradient(
+      180deg,
+      rgba(5, 9, 28, 0.45) 0 3px,
+      transparent 3px 8px
+    );
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .slot-hole {
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    bottom: 24%;
+    height: 30%;
+    border-radius: 6px;
+    background: var(--slot-hole);
+    box-shadow: inset 0 3px 8px rgba(0,0,0,0.6);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .panel-front {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 26%;
+    background: linear-gradient(180deg, var(--panel-top), var(--panel-bottom));
+    border-top: 2px solid rgba(255,255,255,0.12);
+    z-index: 3;
+    pointer-events: none;
+  }
+  /* LEDランプ */
+  .panel-front::after {
+    content: "";
+    position: absolute;
+    left: 12%;
+    top: 45%;
+    width: 76%;
+    height: 6px;
+    background:
+      radial-gradient(circle 3px at 4% 50%, #6ee87c 98%, transparent),
+      radial-gradient(circle 3px at 18% 50%, #6ee87c 98%, transparent),
+      radial-gradient(circle 3px at 32% 50%, var(--gold-400) 98%, transparent),
+      radial-gradient(circle 3px at 96% 50%, #6ee87c 98%, transparent);
+  }
+  .item {
+    position: absolute;
+    left: 50%;
+    bottom: 24%;
+    z-index: 2;
+    transform: translate(-50%, 200%) scale(0.7);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .item .emoji {
+    font-size: clamp(36px, 12vw, 54px);
+    line-height: 1;
+    filter: drop-shadow(0 4px 4px rgba(0,0,0,0.35));
+  }
+  .item .tag {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--navy-800);
+    background: #fff;
+    border-radius: 999px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .mound.up .item { transform: translate(-50%, 0) scale(1); }
+  /* 危険物（タップ禁止）は赤警告 */
+  .mound.hazard {
+    box-shadow: inset 0 0 0 3px rgba(214, 69, 44, 0.85),
+      inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -4px 10px rgba(0,0,0,0.3);
+  }
+  .mound.hazard .tag {
+    background: var(--accent-warn);
+    color: #fff;
+  }
+  .mound.fed .item { transform: translate(-50%, -6%) scale(1.15); }
+  .mound.angry { animation: shake 0.35s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+
+  .float {
+    position: absolute;
+    left: 50%;
+    top: 10%;
+    z-index: 4;
+    transform: translateX(-50%);
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+    animation: rise 0.7s ease-out forwards;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .float.bad { color: #ffb4a0; }
+  @keyframes rise {
+    from { opacity: 1; transform: translate(-50%, 0); }
+    to { opacity: 0; transform: translate(-50%, -26px); }
+  }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background: var(--overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 5;
+  }
+  .overlay[hidden] { display: none; }
+  .panel {
+    position: relative;
+    background: var(--card);
+    border: 2px solid var(--card-border);
+    border-radius: 18px;
+    padding: 22px 20px;
+    width: 100%;
+    max-width: 330px;
+    text-align: center;
+    box-shadow: 0 18px 40px -18px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .panel h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 800;
+    text-wrap: balance;
+  }
+  .panel .animals-row { font-size: 28px; letter-spacing: 4px; }
+  .panel p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-soft);
+  }
+  .panel .warn {
+    background: rgba(214, 69, 44, 0.1);
+    border: 2px dashed var(--accent-warn);
+    border-radius: 14px;
+    padding: 12px 10px;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .panel .warn .warn-big {
+    display: block;
+    font-size: 20px;
+    color: var(--accent-warn);
+  }
+  .panel .score-big {
+    font-size: 42px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .panel .rank {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--blue-600);
+  }
+  .panel .newbest {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--gold-500);
+  }
+  .panel .best {
+    font-size: 12px;
+    color: var(--text-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .panel.promo h2 { color: var(--blue-600); }
+  .panel.promo .eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    color: var(--text-soft);
+  }
+  button.cta {
+    border: none;
+    border-radius: 999px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 800;
+    font-family: inherit;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+    box-shadow: 0 8px 18px -8px var(--blue-600);
+    cursor: pointer;
+  }
+  button.cta:active { transform: translateY(1px); }
+  a.cta {
+    display: block;
+    text-decoration: none;
+    border-radius: 999px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #fff;
+    background: linear-gradient(180deg, var(--blue-400), var(--blue-600));
+    box-shadow: 0 8px 18px -8px var(--blue-600);
+  }
+  .panel .close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 2px solid var(--card-border);
+    background: var(--hud-chip);
+    color: var(--text-soft);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+  }
+  button.ghost {
+    background: none;
+    border: none;
+    color: var(--text-soft);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  button.mute:focus-visible,
+  button.cta:focus-visible,
+  a.cta:focus-visible,
+  .panel .close:focus-visible,
+  button.ghost:focus-visible,
+  .mound:focus-visible {
+    outline: 3px solid var(--gold-500);
+    outline-offset: 2px;
+  }
+
+  footer.note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-soft);
+    letter-spacing: 0.08em;
+  }
+
+  /* 常時表示のPRバナー */
+  .ad-footer {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    width: min(420px, calc(100% - 20px));
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    text-decoration: none;
+    background: linear-gradient(135deg, var(--navy-800), var(--blue-600));
+    box-shadow: 0 10px 26px -10px rgba(19, 28, 69, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+  }
+  .ad-footer:focus-visible {
+    outline: 3px solid var(--gold-500);
+    outline-offset: 2px;
+  }
+  .ad-chip {
+    flex: none;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--navy-800);
+    background: var(--gold-400);
+    border-radius: 4px;
+    padding: 3px 5px;
+  }
+  .ad-copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .ad-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #ffd97a;
+    white-space: nowrap;
+  }
+  .ad-text {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff;
+    transition: opacity 0.4s;
+  }
+  .ad-arrow {
+    flex: none;
+    font-size: 20px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ad-text { transition: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .item { transition: none; }
+    .mound.angry { animation: none; }
+    .float { animation-duration: 0.01ms; opacity: 0; }
+    .timebar .fill { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo">
+      <span class="brand">DIMAGESHARE</span>
+      <h1>レガシー基盤レスキュー大作戦</h1>
+    </div>
+    <button class="mute" id="muteBtn" aria-label="音を切り替え">🔊</button>
+  </header>
+
+  <div class="hud">
+    <div class="chip">
+      <div class="label">スコア</div>
+      <div class="value" id="score">0</div>
+    </div>
+    <div class="chip">
+      <div class="label">連続移行</div>
+      <div class="value" id="combo">-</div>
+    </div>
+    <div class="chip">
+      <div class="label">EOLまで</div>
+      <div class="value" id="time">30</div>
+    </div>
+  </div>
+
+  <div class="timebar"><div class="fill" id="timefill"></div></div>
+
+  <div class="board" id="board">
+    <div class="fever-badge" id="feverBadge" hidden>🤖 AI支援モード ×2</div>
+    <div class="overlay" id="startOverlay">
+      <div class="panel">
+        <h2>サポート終了まで あと30秒！</h2>
+        <div class="animals-row">🖥️🗄️💾💿📠</div>
+        <p class="rule">
+          ラックから顔を出すレガシーサーバーを<br>タップして クラウドへ移行せよ！<br>
+          逃すと塩漬け＝コンボ切れ<br>
+          <strong style="color: var(--gold-500);">🤖が出たら 5秒間 ポイント2倍！</strong>
+        </p>
+        <div class="warn">
+          💣 赤いラベルは タップ厳禁！
+          <span class="warn-big">障害発生 −50点 ＆ コンボ 0 に…</span>
+        </div>
+        <p class="best" id="startBest"></p>
+        <button class="cta" id="startBtn">移行プロジェクト開始！</button>
+      </div>
+    </div>
+    <div class="overlay" id="resultOverlay" hidden>
+      <div class="panel">
+        <h2>タイムアップ！</h2>
+        <div class="score-big" id="finalScore">0</div>
+        <div class="rank" id="rank"></div>
+        <div class="newbest" id="newBest" hidden>🎉 ベストスコア更新！</div>
+        <p class="best" id="resultBest"></p>
+        <button class="cta" id="retryBtn">もういちど 移行する</button>
+      </div>
+    </div>
+    <div class="overlay" id="promoOverlay" hidden>
+      <div class="panel promo">
+        <button class="close" id="promoClose" aria-label="とじる">✕</button>
+        <div class="eyebrow">実は これ…</div>
+        <h2>ディマージシェアの本業です</h2>
+        <div class="animals-row">☁️🖥️⚙️</div>
+        <p>
+          VMware終了・PHPレガシーなどの基盤移行、<br>
+          老朽システムのReact化、AIを活用した高速開発。<br>
+          「レガシーの塩漬け」、いっしょに解決しませんか？
+        </p>
+        <a class="cta" id="promoLink" href="#" target="_blank" rel="noopener">ディマージシェアを知る</a>
+        <button class="ghost" id="promoRetry">もういちど あそぶ</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="note">株式会社ディマージシェア ミニゲーム（デモ）</footer>
+</div>
+
+<a class="ad-footer" id="adFooter" href="#" target="_blank" rel="noopener">
+  <span class="ad-chip">PR</span>
+  <span class="ad-copy">
+    <span class="ad-title">SmartMigration AI</span>
+    <span class="ad-text" id="adText"></span>
+  </span>
+  <span class="ad-arrow">›</span>
+</a>
+
+<script>
+(() => {
+  "use strict";
+
+  const ROUND_SECONDS = 30;
+  const CELLS = 9;
+  const BEST_KEY = "dimage-rescue-best";
+  const FEVER_MS = 5000;
+  // 会社紹介の遷移先（名刺QR用PWAに差し替えも可: https://dimage-intro.vercel.app/）
+  const HP_URL = "https://www.dimage.co.jp/";
+
+  // 重み付きの出現テーブル（レガシー資産の顔ぶれ）
+  const SPECIES = [
+    { emoji: "🖥️", label: "PHP 5.3", pts: 5, weight: 22 },
+    { emoji: "💾", label: "CentOS 6", pts: 5, weight: 20 },
+    { emoji: "🗄️", label: "VMware", pts: 10, weight: 16 },
+    { emoji: "💿", label: "Windows 2012", pts: 10, weight: 13 },
+    { emoji: "📠", label: "FAX複合機", pts: 15, weight: 9 },
+    { emoji: "🖨️", label: "帳票サーバ", pts: 15, weight: 7 },
+    { emoji: "🧮", label: "COBOL資産", pts: 25, weight: 3 },
+    { emoji: "🤖", label: "AI開発支援", pts: 20, weight: 3, fever: true },
+    { emoji: "💣", label: "触るな危険", pts: -50, weight: 15, bee: true },
+  ];
+  const TOTAL_WEIGHT = SPECIES.reduce((s, a) => s + a.weight, 0);
+
+  const board = document.getElementById("board");
+  const scoreEl = document.getElementById("score");
+  const comboEl = document.getElementById("combo");
+  const timeEl = document.getElementById("time");
+  const timefill = document.getElementById("timefill");
+  const startOverlay = document.getElementById("startOverlay");
+  const resultOverlay = document.getElementById("resultOverlay");
+  const promoOverlay = document.getElementById("promoOverlay");
+  const feverBadge = document.getElementById("feverBadge");
+  const muteBtn = document.getElementById("muteBtn");
+  let promoTimer = 0;
+
+  const mounds = [];
+  for (let i = 0; i < CELLS; i++) {
+    const m = document.createElement("div");
+    m.className = "mound";
+    m.setAttribute("role", "button");
+    m.setAttribute("tabindex", "0");
+    m.setAttribute("aria-label", "サーバーラック");
+    const hole = document.createElement("span");
+    hole.className = "slot-hole";
+    const item = document.createElement("span");
+    item.className = "item";
+    const emoji = document.createElement("span");
+    emoji.className = "emoji";
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    item.append(emoji, tag);
+    const front = document.createElement("span");
+    front.className = "panel-front";
+    m.append(hole, item, front);
+    board.appendChild(m);
+    mounds.push({ el: m, emojiEl: emoji, tagEl: tag, species: null, hideAt: 0, fed: false });
+    m.addEventListener("pointerdown", () => tap(i));
+    m.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(i); }
+    });
+  }
+
+  let running = false;
+  let score = 0;
+  let combo = 0;
+  let endAt = 0;
+  let nextSpawnAt = 0;
+  let feverUntil = 0;
+  let rafId = 0;
+
+  // ---- サウンド（短いピコピコ音のみ・ミュート可） ----
+  let muted = false;
+  let audioCtx = null;
+  function beep(freq, duration, type, gainValue) {
+    if (muted) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(gainValue || 0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    } catch (e) { /* 音が出せない環境では無音で続行 */ }
+  }
+  muteBtn.addEventListener("click", () => {
+    muted = !muted;
+    muteBtn.textContent = muted ? "🔇" : "🔊";
+  });
+
+  function loadBest() {
+    const v = parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function pickSpecies() {
+    let r = Math.random() * TOTAL_WEIGHT;
+    for (const s of SPECIES) {
+      r -= s.weight;
+      if (r <= 0) return s;
+    }
+    return SPECIES[0];
+  }
+
+  function elapsedRatio() {
+    return 1 - Math.max(0, endAt - performance.now()) / (ROUND_SECONDS * 1000);
+  }
+
+  function spawn() {
+    const empty = mounds.filter((m) => !m.species);
+    if (!empty.length) return;
+    const m = empty[Math.floor(Math.random() * empty.length)];
+    const s = pickSpecies();
+    m.species = s;
+    m.fed = false;
+    m.emojiEl.textContent = s.emoji;
+    m.tagEl.textContent = s.label;
+    m.el.classList.remove("fed", "angry");
+    m.el.classList.toggle("hazard", !!s.bee);
+    m.el.classList.add("up");
+    // 後半ほど表示時間を短く（1000ms → 550ms）
+    const visible = 1000 - 450 * elapsedRatio();
+    m.hideAt = performance.now() + visible;
+  }
+
+  function hide(m, escaped) {
+    // 逃したら塩漬け＝コンボ切れ（移行済み・ゲーム外のクリーンアップは対象外）
+    if (escaped && running && m.species && !m.fed && !m.species.bee) {
+      if (combo >= 3) showFloat(m, "塩漬けに…", true);
+      combo = 0;
+      updateHud();
+    }
+    m.species = null;
+    m.el.classList.remove("up", "fed", "hazard");
+  }
+
+  function showFloat(m, text, bad) {
+    const f = document.createElement("span");
+    f.className = "float" + (bad ? " bad" : "");
+    f.textContent = text;
+    m.el.appendChild(f);
+    setTimeout(() => f.remove(), 700);
+  }
+
+  function tap(i) {
+    if (!running) return;
+    const m = mounds[i];
+    if (!m.species || m.fed) return;
+    const s = m.species;
+    m.fed = true;
+
+    if (s.bee) {
+      combo = 0;
+      score += s.pts; // マイナス突入あり
+      m.el.classList.add("angry");
+      m.emojiEl.textContent = "💥";
+      m.tagEl.textContent = "炎上中…";
+      showFloat(m, "障害発生！ " + s.pts, true);
+      beep(120, 0.3, "square", 0.07);
+      m.hideAt = performance.now() + 350;
+    } else {
+      combo += 1;
+      const bonus = Math.min(Math.floor(combo / 3), 5); // コンボボーナス（3連ごとに+1・上限+5）
+      let gained = s.pts + bonus;
+      if (performance.now() < feverUntil) gained *= 2; // AI支援モード中は2倍
+      score += gained;
+      m.el.classList.add("fed");
+      m.emojiEl.textContent = "☁️";
+      m.tagEl.textContent = "移行完了!";
+      if (s.fever) {
+        feverUntil = performance.now() + FEVER_MS;
+        showFloat(m, "🤖AI支援！ +" + gained);
+        beep(880, 0.3, "triangle", 0.1);
+      } else {
+        showFloat(m, "+" + gained);
+        beep(420 + Math.min(combo, 12) * 40, 0.12, "sine", 0.09);
+      }
+      m.hideAt = performance.now() + 300;
+    }
+    updateHud();
+  }
+
+  function updateHud() {
+    scoreEl.textContent = score;
+    scoreEl.classList.toggle("neg", score < 0);
+    comboEl.textContent = combo > 1 ? combo + "連" : "-";
+    comboEl.classList.toggle("combo-hot", combo >= 5);
+  }
+
+  function loop() {
+    const now = performance.now();
+    const remain = Math.max(0, endAt - now);
+    timeEl.textContent = Math.ceil(remain / 1000);
+    const ratio = remain / (ROUND_SECONDS * 1000);
+    timefill.style.width = ratio * 100 + "%";
+    timefill.classList.toggle("low", remain <= 10000);
+
+    const inFever = now < feverUntil;
+    board.classList.toggle("fever", inFever);
+    feverBadge.hidden = !inFever;
+
+    for (const m of mounds) {
+      if (m.species && now >= m.hideAt) hide(m, true);
+    }
+    if (now >= nextSpawnAt) {
+      spawn();
+      // 中盤以降はときどき2台同時に出す
+      if (elapsedRatio() > 0.35 && Math.random() < 0.4) spawn();
+      // 後半ほど出現間隔を短く（700ms → 330ms）＋ゆらぎ
+      const interval = 700 - 370 * elapsedRatio();
+      nextSpawnAt = now + interval * (0.75 + Math.random() * 0.5);
+    }
+
+    if (remain <= 0) { finish(); return; }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function start() {
+    score = 0;
+    combo = 0;
+    running = true;
+    feverUntil = 0;
+    startOverlay.hidden = true;
+    resultOverlay.hidden = true;
+    promoOverlay.hidden = true;
+    clearTimeout(promoTimer);
+    for (const m of mounds) hide(m);
+    updateHud();
+    endAt = performance.now() + ROUND_SECONDS * 1000;
+    nextSpawnAt = performance.now() + 400;
+    beep(660, 0.15, "sine", 0.08);
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function rankFor(s) {
+    if (s < 0) return "🔥 炎上案件…";
+    if (s >= 500) return "🏆 でんせつのCTO";
+    if (s >= 350) return "🌟 ベテランSE";
+    if (s >= 180) return "🍀 いちにんまえエンジニア";
+    return "🌱 みならいエンジニア";
+  }
+
+  function finish() {
+    running = false;
+    cancelAnimationFrame(rafId);
+    board.classList.remove("fever");
+    feverBadge.hidden = true;
+    for (const m of mounds) hide(m);
+
+    const best = loadBest();
+    const isBest = score > best;
+    if (isBest) localStorage.setItem(BEST_KEY, String(score));
+
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("rank").textContent = rankFor(score);
+    document.getElementById("newBest").hidden = !isBest;
+    document.getElementById("resultBest").textContent =
+      "ベストスコア: " + Math.max(best, score);
+    resultOverlay.hidden = false;
+    beep(520, 0.4, "triangle", 0.08);
+
+    // スコアを見せてから会社紹介ポップアップ
+    clearTimeout(promoTimer);
+    promoTimer = setTimeout(() => { promoOverlay.hidden = false; }, 2000);
+  }
+
+  document.getElementById("startBtn").addEventListener("click", start);
+  document.getElementById("retryBtn").addEventListener("click", start);
+  document.getElementById("promoRetry").addEventListener("click", start);
+  document.getElementById("promoLink").href = HP_URL;
+  document.getElementById("promoClose").addEventListener("click", () => {
+    promoOverlay.hidden = true;
+  });
+
+  const best = loadBest();
+  document.getElementById("startBest").textContent =
+    best > 0 ? "ベストスコア: " + best : "はじめての移行プロジェクト！";
+
+  // ---- 常時表示PRバナー（2種のLPをローテーション） ----
+  const ADS = [
+    {
+      url: "https://www.dimage.co.jp/lp/SmartMigration-AI/creative/",
+      text: "「ご長寿レガシー」を低コストで最新モダンに",
+    },
+    {
+      url: "https://www.dimage.co.jp/lp/SmartMigration-AI/professional/",
+      text: "DXをAIで実現。AI駆動開発で高速移行",
+    },
+  ];
+  const adFooter = document.getElementById("adFooter");
+  const adText = document.getElementById("adText");
+  let adIdx = 0;
+  function renderAd() {
+    adFooter.href = ADS[adIdx].url;
+    adText.textContent = ADS[adIdx].text;
+  }
+  renderAd();
+  setInterval(() => {
+    adText.style.opacity = 0;
+    setTimeout(() => {
+      adIdx = (adIdx + 1) % ADS.length;
+      renderAd();
+      adText.style.opacity = 1;
+    }, 400);
+  }, 8000);
+})();
+</script>
+</body>
+</html>
