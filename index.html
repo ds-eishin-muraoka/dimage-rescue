@@ -408,9 +408,16 @@
     line-height: 1.6;
     color: var(--text);
   }
+  .panel .warn .warn-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    color: var(--accent-warn);
+  }
   .panel .warn .warn-big {
     display: block;
-    font-size: 20px;
+    font-size: 18px;
+    white-space: nowrap;
     color: var(--accent-warn);
   }
   .panel .score-big {
@@ -633,12 +640,12 @@
         <div class="animals-row">🖥️🗄️💾💿📠</div>
         <p class="rule">
           ラックから顔を出すレガシーサーバーを<br>タップして クラウドへ移行せよ！<br>
-          逃すと塩漬け＝コンボ切れ<br>
+          💣赤いラベルは タップ厳禁・逃すと塩漬け<br>
           <strong style="color: var(--gold-500);">🤖が出たら 5秒間 ポイント2倍！</strong>
         </p>
         <div class="warn">
-          💣 赤いラベルは タップ厳禁！
-          <span class="warn-big">障害発生 −50点 ＆ コンボ 0 に…</span>
+          <div class="warn-label">ペナルティ</div>
+          <div class="warn-big">💣 障害発生 −50点＆コンボ0</div>
         </div>
         <p class="best" id="startBest"></p>
         <button class="cta" id="startBtn">移行プロジェクト開始！</button>
@@ -790,9 +797,11 @@
   }
 
   function pickSpecies() {
-    let r = Math.random() * TOTAL_WEIGHT;
+    // 後半ほど💣の出現率を上げる（重み15→25相当）
+    const beeBonus = Math.round(10 * elapsedRatio());
+    let r = Math.random() * (TOTAL_WEIGHT + beeBonus);
     for (const s of SPECIES) {
-      r -= s.weight;
+      r -= s.weight + (s.bee ? beeBonus : 0);
       if (r <= 0) return s;
     }
     return SPECIES[0];
