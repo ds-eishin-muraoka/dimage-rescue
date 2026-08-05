@@ -823,13 +823,26 @@
     muted = !muted;
     muteBtn.textContent = muted ? "🔇" : "🔊";
   });
-  // iOS Safari対策: 最初のタッチ（ユーザー操作）でAudioContextを起こす
-  document.addEventListener("pointerdown", () => {
+  // iOS対策: 最初のユーザー操作でAudioContextを解錠
+  // （WebKitはtouchend/clickでないと解錠されないことがあるため複数イベントで試行し、
+  //   無音バッファを1回再生して解錠を確定させる）
+  function unlockAudio() {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
+      const buf = audioCtx.createBuffer(1, 1, 22050);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+      src.start(0);
     } catch (e) { /* 音が出せない環境では無音で続行 */ }
-  }, { capture: true });
+    if (audioCtx && audioCtx.state === "running") {
+      ["pointerdown", "touchend", "click"].forEach((t) =>
+        document.removeEventListener(t, unlockAudio, true));
+    }
+  }
+  ["pointerdown", "touchend", "click"].forEach((t) =>
+    document.addEventListener(t, unlockAudio, true));
 
   function loadBest() {
     const v = parseInt(localStorage.getItem(BEST_KEY) || "0", 10);
