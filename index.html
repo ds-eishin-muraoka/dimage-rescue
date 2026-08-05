@@ -850,10 +850,12 @@
     if (s.bee) {
       combo = 0;
       score += s.pts; // マイナス突入あり
+      const wasFever = performance.now() < feverUntil;
+      feverUntil = 0; // 障害を起こしたらAI支援モードも強制終了
       m.el.classList.add("angry");
       m.emojiEl.textContent = "💥";
       m.tagEl.textContent = "炎上中…";
-      showFloat(m, "障害発生！ " + s.pts, true);
+      showFloat(m, (wasFever ? "AI支援 中断！ " : "障害発生！ ") + s.pts, true);
       beep(120, 0.3, "square", 0.07);
       m.hideAt = performance.now() + 350;
     } else {
