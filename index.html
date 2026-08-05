@@ -826,6 +826,10 @@
   // iOS対策: 最初のユーザー操作でAudioContextを解錠
   // （WebKitはtouchend/clickでないと解錠されないことがあるため複数イベントで試行し、
   //   無音バッファを1回再生して解錠を確定させる）
+  // iOS 17+: マナーモード中でもスピーカーから音を出す（再生コンテンツ扱いにする）
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+  } catch (e) { /* 未対応環境は無視 */ }
   function unlockAudio() {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
