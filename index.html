@@ -852,10 +852,13 @@
 
   // ---- BGM（かわいい合成ループ／音源ファイル不要・ミュート連動） ----
   let bgmTimer = null, bgmStep = 0;
-  const BGM_STEP_MS = 190;
-  const BGM_MELODY = [523.25, 659.25, 783.99, 659.25, 880.0, 783.99, 659.25, 0,
-                      587.33, 659.25, 783.99, 880.0, 783.99, 659.25, 587.33, 0];
-  const BGM_BASS   = [130.81, 0, 0, 0, 174.61, 0, 0, 0, 146.83, 0, 0, 0, 196.0, 0, 0, 0];
+  const BGM_STEP_MS = 150;
+  // 通常BGM：イ短調の緊迫ループ（炎上案件をさばく感じ・0=休符）
+  const BGM_MELODY = [440.0, 0, 523.25, 659.25, 0, 698.46, 659.25, 0,
+                      440.0, 0, 523.25, 830.61, 880.0, 830.61, 0, 0];
+  // 刻むベース（駆り立てる8分）＋終盤に半音上昇で緊張
+  const BGM_BASS   = [110.0, 110.0, 110.0, 110.0, 110.0, 110.0, 110.0, 110.0,
+                      110.0, 110.0, 110.0, 110.0, 116.54, 123.47, 130.81, 146.83];
   // ボーナスBGM（🤖 AI支援モード中）：1オクターブ上の派手なアルペジオ＋ドライブするベース
   const BGM_MELODY_BONUS = [1046.5, 1318.5, 1568.0, 1318.5, 1760.0, 1568.0, 1318.5, 1046.5,
                             1174.7, 1318.5, 1568.0, 1760.0, 2093.0, 1760.0, 1568.0, 1318.5];
@@ -890,8 +893,8 @@
       const bonus = performance.now() < feverUntil;
       const mel = bonus ? BGM_MELODY_BONUS : BGM_MELODY;
       const bass = bonus ? BGM_BASS_BONUS : BGM_BASS;
-      bgmTone(mel[bgmStep % mel.length], bonus ? 0.06 : 0.045, "triangle", BGM_STEP_MS / 1000 * 0.9);
-      bgmTone(bass[bgmStep % bass.length], bonus ? 0.05 : 0.04, "sine", BGM_STEP_MS / 1000 * 1.6);
+      bgmTone(mel[bgmStep % mel.length], bonus ? 0.06 : 0.038, bonus ? "triangle" : "sawtooth", BGM_STEP_MS / 1000 * 0.9);
+      bgmTone(bass[bgmStep % bass.length], bonus ? 0.05 : 0.05, bonus ? "sine" : "square", BGM_STEP_MS / 1000 * 1.2);
       bgmStep++;
     }, BGM_STEP_MS);
   }
